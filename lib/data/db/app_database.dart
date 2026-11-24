@@ -37,6 +37,20 @@ class StudyItem {
   });
 }
 
+class OverallStats {
+  final int totalLexemes;
+  final int activeLexemes;
+  final int totalReviews;
+  final double accuracy;
+
+  OverallStats({
+    required this.totalLexemes,
+    required this.activeLexemes,
+    required this.totalReviews,
+    required this.accuracy,
+  });
+}
+
 @DriftDatabase(tables: [
   WordFamilies,
   Lexemes,
@@ -120,6 +134,181 @@ class AppDatabase extends _$AppDatabase {
     return await query.map((row) => row.read(countExp) ?? 0).getSingle();
   }
 
+  Future<Set<String>> getKnownHeadwordsSet() async {
+    final rows = await select(lexemes).get();
+    return rows.map((e) => e.headword.toLowerCase().trim()).toSet();
+  }
+
+  Future<LexemeWithPrimarySense?> findLexemeByHeadword(String word) async {
+    final clean = word.toLowerCase().trim();
+    final all = await select(lexemes).get();
+    Lexeme? found;
+    for (final l in all) {
+      if (l.headword.toLowerCase().trim() == clean) {
+        found = l;
+        break;
+      }
+    }
+    if (found == null) return null;
+    final senseRows = await (select(senses)..where((s) => s.lexemeId.equals(found!.id))).get();
+    final primarySense = senseRows.isNotEmpty ? senseRows.first : null;
+    final exampleRows = primarySense == null
+        ? <Example>[]
+        : await (select(examples)..where((e) => e.senseId.equals(primarySense.id))).get();
+    return LexemeWithPrimarySense(
+      lexeme: found,
+      sense: primarySense,
+      examples: exampleRows,
+    );
+  }
+
+  Future<int> addCustomLexeme({
+    required String headword,
+    required String translationRu,
+    String definitionEn = '',
+    String exampleEn = '',
+    String exampleRu = '',
+    String? ipa,
+    String? pos,
+    String? cefrLevel,
+    String kind = 'word',
+    String source = 'manual',
+  }) async {
+    return transaction(() async {
+      final lexemeId = await into(lexemes).insert(
+        LexemesCompanion.insert(
+          headword: headword.trim(),
+          kind: kind,
+          pos: Value(pos),
+          ipa: Value(ipa),
+          cefrLevel: Value(cefrLevel),
+          source: Value(source),
+        ),
+      );
+
+      final senseId = await into(senses).insert(
+        SensesCompanion.insert(
+          lexemeId: lexemeId,
+          definitionEn: definitionEn.trim(),
+          translationRu: translationRu.trim(),
+        ),
+      );
+
+      if (exampleEn.trim().isNotEmpty) {
+        await into(examples).insert(
+          ExamplesCompanion.insert(
+            senseId: senseId,
+            textEn: exampleEn.trim(),
+            textRu: exampleRu.trim(),
+            source: Value(source == 'ai' ? 'ai' : 'user'),
+          ),
+        );
+      }
+
+      await into(cards).insert(
+        CardsCompanion.insert(
+          lexemeId: lexemeId,
+          senseId: senseId,
+          direction: 'recognize_en_ru',
+        ),
+      );
+      await into(cards).insert(
+        CardsCompanion.insert(
+          lexemeId: lexemeId,
+          senseId: senseId,
+          direction: 'recall_ru_en',
+        ),
+      );
+
+      return lexemeId;
+    });
+  }
+
+  /// Импорт CSV формата: headword,translation,example
+  Future<int> importCsv(String csvContent) async {
+    final existing = await getKnownHeadwordsSet();
+    final lines = csvContent.split(RegExp(r'\r?\n'));
+    int added = 0;
+
+    for (final rawLine in lines) {
+      final line = rawLine.trim();
+      if (line.isEmpty) continue;
+      if (line.toLowerCase().startsWith('headword,')) continue;
+
+      final parts = line.split(',');
+      if (parts.length < 2) continue;
+
+      final headword = parts[0].trim();
+      final translation = parts[1].trim();
+      final example = parts.length >= 3 ? parts.sublist(2).join(',').trim() : '';
+
+      if (headword.isEmpty || translation.isEmpty) continue;
+      if (existing.contains(headword.toLowerCase())) continue;
+
+      await addCustomLexeme(
+        headword: headword,
+        translationRu: translation,
+        exampleEn: example,
+        source: 'manual',
+      );
+      existing.add(headword.toLowerCase());
+      added++;
+    }
+    return added;
+  }
+
+  // --- Тексты для чтения ---
+  Future<List<ReadingText>> getAllTexts() {
+    return (select(texts)..orderBy([(t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc)])).get();
+  }
+
+  Future<int> addReadingText({
+    required String title,
+    required String body,
+    String? source,
+    required double knownRatio,
+  }) {
+    return into(texts).insert(
+      TextsCompanion.insert(
+        title: title.trim(),
+        body: body.trim(),
+        source: Value(source),
+        knownRatio: Value(knownRatio),
+      ),
+    );
+  }
+
+  Future<void> deleteReadingText(int id) async {
+    await (delete(texts)..where((t) => t.id.equals(id))).go();
+  }
+
+  // --- Статистика ---
+  Future<List<DailyStat>> getDailyStatsList() {
+    return (select(dailyStats)
+          ..orderBy([(d) => OrderingTerm(expression: d.date, mode: OrderingMode.desc)])
+          ..limit(30))
+        .get();
+  }
+
+  Future<OverallStats> getOverallStats() async {
+    final totalLex = await getLexemesCount();
+    final reviewedCards = await (select(cards)..where((c) => c.reps.isBiggerThanValue(0))).get();
+    final activeLexIds = reviewedCards.map((c) => c.lexemeId).toSet();
+
+    final logs = await select(reviewLogs).get();
+    final totalRev = logs.length;
+    final correctCount = logs.where((l) => l.correct).length;
+    final acc = totalRev == 0 ? 0.0 : correctCount / totalRev;
+
+    return OverallStats(
+      totalLexemes: totalLex,
+      activeLexemes: activeLexIds.length,
+      totalReviews: totalRev,
+      accuracy: acc,
+    );
+  }
+
+  // --- Мнемоники и Пиявки ---
   Future<List<Mnemonic>> getMnemonicsForLexeme(int lexemeId) {
     return (select(mnemonics)..where((m) => m.lexemeId.equals(lexemeId))).get();
   }
@@ -163,6 +352,7 @@ class AppDatabase extends _$AppDatabase {
     return items;
   }
 
+  // --- Очередь FSRS ---
   Future<List<StudyItem>> buildStudyQueue() async {
     final now = DateTime.now();
     final newLimit = int.tryParse(await getSetting('daily_new_limit', '15')) ?? 15;
@@ -371,3 +561,4 @@ LazyDatabase _openConnection() {
     return NativeDatabase.createInBackground(file);
   });
 }
+
