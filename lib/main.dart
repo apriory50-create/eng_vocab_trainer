@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'data/db/app_database.dart';
 import 'data/seed/seed_loader.dart';
+import 'presentation/study/study_screen.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
@@ -16,12 +17,13 @@ final seedInitProvider = FutureProvider<int>((ref) async {
   return loader.loadAllMissingSeeds();
 });
 
-final dbStatsProvider = FutureProvider<({int lexemes, int cards})>((ref) async {
+final dbStatsProvider = FutureProvider<({int lexemes, int cards, int due})>((ref) async {
   await ref.watch(seedInitProvider.future);
   final db = ref.watch(databaseProvider);
   final lexCount = await db.getLexemesCount();
   final cardCount = await db.getCardsCount();
-  return (lexemes: lexCount, cards: cardCount);
+  final dueCount = await db.getDueCardsCount();
+  return (lexemes: lexCount, cards: cardCount, due: dueCount);
 });
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -32,7 +34,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => MainShell(child: child),
         routes: [
           GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
-          GoRoute(path: '/study', builder: (_, __) => const PlaceholderTab(title: 'Занятие (Этап 2)')),
+          GoRoute(path: '/study', builder: (_, __) => const StudyScreen()),
           GoRoute(path: '/library', builder: (_, __) => const LibraryScreen()),
           GoRoute(path: '/reader', builder: (_, __) => const PlaceholderTab(title: 'Чтение (Этап 4)')),
           GoRoute(path: '/settings', builder: (_, __) => const PlaceholderTab(title: 'Настройки (Этап 3)')),
@@ -120,13 +122,24 @@ class HomeScreen extends ConsumerWidget {
                       const SizedBox(height: 12),
                       Text('Загружено слов и фраз: ${stats.lexemes}'),
                       const SizedBox(height: 4),
-                      Text('Создано карточек повторения: ${stats.cards}'),
+                      Text('Всего карточек: ${stats.cards}'),
+                      const SizedBox(height: 4),
+                      Text(
+                        'К повторению сегодня: ${stats.due}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 16),
               FilledButton.icon(
+                onPressed: () => context.go('/study'),
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Начать занятие'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
                 onPressed: () => context.go('/library'),
                 icon: const Icon(Icons.menu_book),
                 label: const Text('Открыть словарь'),
