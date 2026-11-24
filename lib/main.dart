@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'data/db/app_database.dart';
 import 'data/seed/seed_loader.dart';
+import 'presentation/settings/settings_screen.dart';
 import 'presentation/study/study_screen.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
@@ -37,7 +38,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/study', builder: (_, __) => const StudyScreen()),
           GoRoute(path: '/library', builder: (_, __) => const LibraryScreen()),
           GoRoute(path: '/reader', builder: (_, __) => const PlaceholderTab(title: 'Чтение (Этап 4)')),
-          GoRoute(path: '/settings', builder: (_, __) => const PlaceholderTab(title: 'Настройки (Этап 3)')),
+          GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
         ],
       ),
     ],
