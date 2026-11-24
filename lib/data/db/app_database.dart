@@ -70,6 +70,8 @@ class AppDatabase extends _$AppDatabase {
     final defaults = {
       'daily_new_limit': '15',
       'daily_review_limit': '100',
+      'ai_provider': 'anthropic',
+      'ai_base_url': 'https://api.anthropic.com/v1/messages',
       'ai_model': 'claude-sonnet-4-20250514',
       'tts_voice': 'en-US',
       'tts_speed': '0.95',
@@ -91,6 +93,12 @@ class AppDatabase extends _$AppDatabase {
     return row?.value ?? fallback;
   }
 
+  Future<void> setSetting(String key, String value) async {
+    await into(settings).insertOnConflictUpdate(
+      SettingsCompanion(key: Value(key), value: Value(value)),
+    );
+  }
+
   Future<int> getLexemesCount() async {
     final countExp = lexemes.id.count();
     final query = selectOnly(lexemes)..addColumns([countExp]);
@@ -110,6 +118,49 @@ class AppDatabase extends _$AppDatabase {
       ..addColumns([countExp])
       ..where(cards.suspended.equals(false) & cards.due.isSmallerOrEqualValue(now));
     return await query.map((row) => row.read(countExp) ?? 0).getSingle();
+  }
+
+  Future<List<Mnemonic>> getMnemonicsForLexeme(int lexemeId) {
+    return (select(mnemonics)..where((m) => m.lexemeId.equals(lexemeId))).get();
+  }
+
+  Future<void> saveMnemonic({
+    required int lexemeId,
+    required String type,
+    required String content,
+    String createdBy = 'ai',
+  }) async {
+    await into(mnemonics).insert(
+      MnemonicsCompanion.insert(
+        lexemeId: lexemeId,
+        type: type,
+        textContent: content,
+        createdBy: Value(createdBy),
+      ),
+    );
+  }
+
+  Future<List<StudyItem>> getLeeches() async {
+    final leechCards = await (select(cards)
+          ..where((c) => c.lapses.isBiggerOrEqualValue(4) & c.suspended.equals(false))
+          ..orderBy([(c) => OrderingTerm(expression: c.lapses, mode: OrderingMode.desc)]))
+        .get();
+
+    final items = <StudyItem>[];
+    for (final card in leechCards) {
+      final lex = await (select(lexemes)..where((l) => l.id.equals(card.lexemeId))).getSingleOrNull();
+      final sense = await (select(senses)..where((s) => s.id.equals(card.senseId))).getSingleOrNull();
+      if (lex == null || sense == null) continue;
+      final exList = await (select(examples)..where((e) => e.senseId.equals(sense.id))).get();
+      items.add(StudyItem(
+        card: card,
+        lexeme: lex,
+        sense: sense,
+        examples: exList,
+        distractors: const [],
+      ));
+    }
+    return items;
   }
 
   Future<List<StudyItem>> buildStudyQueue() async {
