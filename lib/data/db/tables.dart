@@ -48,6 +48,7 @@ class Mnemonics extends Table {
   BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
 }
 
+@DataClassName('VocabCard')
 @TableIndex(name: 'idx_cards_due', columns: {#due})
 @TableIndex(name: 'idx_cards_state', columns: {#state})
 class Cards extends Table {
@@ -78,6 +79,7 @@ class ReviewLogs extends Table {
   BoolColumn get correct => boolean()();
 }
 
+@DataClassName('ReadingText')
 class Texts extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get title => text()();
