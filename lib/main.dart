@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'data/db/app_database.dart';
 import 'data/seed/seed_loader.dart';
+import 'presentation/reader/reader_screen.dart';
 import 'presentation/settings/settings_screen.dart';
+import 'presentation/stats/stats_screen.dart';
 import 'presentation/study/study_screen.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
@@ -37,7 +39,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
           GoRoute(path: '/study', builder: (_, __) => const StudyScreen()),
           GoRoute(path: '/library', builder: (_, __) => const LibraryScreen()),
-          GoRoute(path: '/reader', builder: (_, __) => const PlaceholderTab(title: 'Чтение (Этап 4)')),
+          GoRoute(path: '/reader', builder: (_, __) => const ReaderScreen()),
           GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
         ],
       ),
@@ -144,6 +146,14 @@ class HomeScreen extends ConsumerWidget {
                 onPressed: () => context.go('/library'),
                 icon: const Icon(Icons.menu_book),
                 label: const Text('Открыть словарь'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const StatsScreen()),
+                ),
+                icon: const Icon(Icons.bar_chart),
+                label: const Text('Статистика и импорт CSV'),
               ),
             ],
           ),
@@ -252,19 +262,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class PlaceholderTab extends StatelessWidget {
-  final String title;
-  const PlaceholderTab({super.key, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(child: Text('$title — будет добавлено на следующем этапе')),
     );
   }
 }
