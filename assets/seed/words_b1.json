@@ -1,0 +1,107 @@
+[
+  {
+    "headword": "ubiquitous",
+    "kind": "word",
+    "pos": "adj",
+    "ipa": "/juːˈbɪk.wɪ.təs/",
+    "cefr_level": "C1",
+    "freq_rank": 4200,
+    "senses": [
+      {
+        "definition_en": "seeming to be everywhere at the same time",
+        "translation_ru": "вездесущий, повсеместный",
+        "register": "formal",
+        "examples": [
+          {
+            "en": "Smartphones have become ubiquitous in modern life.",
+            "ru": "Смартфоны стали повсеместными в современной жизни."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "headword": "make a decision",
+    "kind": "collocation",
+    "pos": "phrase",
+    "ipa": "/meɪk ə dɪˈsɪʒ.ən/",
+    "cefr_level": "B1",
+    "freq_rank": 450,
+    "senses": [
+      {
+        "definition_en": "to choose one option after thinking carefully",
+        "translation_ru": "принять решение",
+        "register": "neutral",
+        "examples": [
+          {
+            "en": "We need to make a decision before Friday.",
+            "ru": "Нам нужно принять решение до пятницы."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "headword": "put off",
+    "kind": "phrasal_verb",
+    "pos": "verb",
+    "ipa": "/pʊt ɒf/",
+    "cefr_level": "B1",
+    "freq_rank": 780,
+    "senses": [
+      {
+        "definition_en": "to delay doing something until a later time",
+        "translation_ru": "откладывать (на потом)",
+        "register": "neutral",
+        "examples": [
+          {
+            "en": "Stop putting off that difficult conversation.",
+            "ru": "Перестань откладывать этот сложный разговор."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "headword": "I was wondering if",
+    "kind": "chunk",
+    "pos": "phrase",
+    "ipa": "/aɪ wəz ˈwʌn.dər.ɪŋ ɪf/",
+    "cefr_level": "B2",
+    "freq_rank": 900,
+    "senses": [
+      {
+        "definition_en": "a polite way to ask for help or information",
+        "translation_ru": "мне было интересно, не могли бы вы… (вежливая просьба)",
+        "register": "neutral",
+        "examples": [
+          {
+            "en": "I was wondering if you could send me the report today.",
+            "ru": "Мне было интересно, не могли бы вы прислать мне отчёт сегодня."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "headword": "cut corners",
+    "kind": "idiom",
+    "pos": "phrase",
+    "ipa": "/kʌt ˈkɔː.nəz/",
+    "cefr_level": "B2",
+    "freq_rank": 2100,
+    "senses": [
+      {
+        "definition_en": "to do something in the easiest or cheapest way, often reducing quality",
+        "translation_ru": "срезать углы, халтурить ради экономии времени или денег",
+        "register": "informal",
+        "examples": [
+          {
+            "en": "They cut corners during construction, and now the roof leaks.",
+            "ru": "Они схалтурили при строительстве, и теперь крыша протекает."
+          }
+        ]
+      }
+    ]
+  }
+]
